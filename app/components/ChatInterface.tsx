@@ -1,7 +1,8 @@
  'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useCode } from "../contexts/CodeContext";
+import { useProgress } from "../contexts/ProgressContext";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "./ui/button";
@@ -14,21 +15,55 @@ type Message = {
   content: string;
 };
 
-export default function ChatInterface() {
-  const { code, language, setOnSubmit, setCode, setLanguage } = useCode();
-  const [messages, setMessages] = useState<Message[]>([
-    {
+const getInitialMessage = (mode: 'roadmap' | 'interview', problemTitle?: string, categoryName?: string): Message => {
+  if (mode === 'roadmap' && problemTitle && categoryName) {
+    return {
       role: "assistant",
-      content:
-        "Hello! I'm your AI interviewer. Let's start by picking a topic. What would you like to practice today? (e.g., Arrays, Strings, Dynamic Programming, Trees, Graphs)",
-    },
+      content: `Hey! Let's learn **${problemTitle}** from ${categoryName} together. 🎯\n\nI'm here as your mentor - feel free to ask me anything! If you're stuck or don't know how to approach this, just say so and I'll teach you the concepts step by step.\n\nWhen you're ready, say "let's start" and I'll present the problem!`,
+    };
+  }
+  return {
+    role: "assistant",
+    content:
+      "Hello! I'm your AI interviewer. Let's simulate a real coding interview. 💼\n\nPick a topic (Arrays, Strings, Trees, Graphs, DP, etc.) and difficulty level, and I'll give you a problem to solve under interview conditions.\n\nI'll evaluate your solution like a real interviewer would. Ready?",
+  };
+};
+
+export default function ChatInterface() {
+  const { code, language, setOnSubmit, setCode, setLanguage, resetCode } = useCode();
+  const { selectedProblem, mode, markComplete } = useProgress();
+  const prevProblemRef = useRef<string | null>(null);
+  
+  const [messages, setMessages] = useState<Message[]>([
+    getInitialMessage('interview'),
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Reset chat when problem or mode changes
+  useEffect(() => {
+    const problemId = selectedProblem?.id ?? null;
+    
+    // Only reset if something actually changed
+    if (problemId !== prevProblemRef.current) {
+      prevProblemRef.current = problemId;
+      
+      if (mode === 'roadmap' && selectedProblem) {
+        setMessages([getInitialMessage('roadmap', selectedProblem.title, selectedProblem.categoryName)]);
+        resetCode();
+      } else if (mode === 'interview') {
+        setMessages([getInitialMessage('interview')]);
+        resetCode();
+      }
+    }
+  }, [selectedProblem, mode, resetCode]);
+
   const handleSubmitCode = useCallback(async () => {
+    const problemContext = selectedProblem 
+      ? `I'm solving the "${selectedProblem.title}" problem from ${selectedProblem.categoryName}.`
+      : '';
     const submitMessage =
-      "Please evaluate my solution and let me know if I pass or fail the interview.";
+      `${problemContext} Please evaluate my solution and let me know if I pass or fail. Be specific about correctness, time complexity, and space complexity.`;
     const newMessages = [
       ...messages,
       { role: "user" as const, content: submitMessage },
@@ -46,6 +81,11 @@ export default function ChatInterface() {
           messages: newMessages,
           code,
           language,
+          problemContext: selectedProblem ? {
+            title: selectedProblem.title,
+            category: selectedProblem.categoryName,
+            difficulty: selectedProblem.difficulty,
+          } : null,
         }),
       });
 
@@ -71,6 +111,11 @@ export default function ChatInterface() {
         },
       ]);
 
+      // If AI says the solution passes and we have a selected problem, mark it complete
+      if (data.passed && selectedProblem) {
+        markComplete(selectedProblem.id);
+      }
+
       if (data.codeTemplate) {
         if (data.templateLanguage && data.templateLanguage !== language) {
           setLanguage(data.templateLanguage);
@@ -90,7 +135,7 @@ export default function ChatInterface() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, code, language, setCode, setLanguage]);
+  }, [messages, code, language, setCode, setLanguage, selectedProblem, markComplete]);
 
   useEffect(() => {
     setOnSubmit(handleSubmitCode);
@@ -117,6 +162,12 @@ export default function ChatInterface() {
           messages: newMessages,
           code,
           language,
+          // Pass problem context for mentor mode
+          problemContext: selectedProblem ? {
+            title: selectedProblem.title,
+            category: selectedProblem.categoryName,
+            difficulty: selectedProblem.difficulty,
+          } : null,
         }),
       });
 
@@ -142,6 +193,11 @@ export default function ChatInterface() {
         },
       ]);
 
+      // If AI says the solution passes and we have a selected problem, mark it complete
+      if (data.passed && selectedProblem) {
+        markComplete(selectedProblem.id);
+      }
+
       if (data.codeTemplate) {
         if (data.templateLanguage && data.templateLanguage !== language) {
           setLanguage(data.templateLanguage);
@@ -163,11 +219,19 @@ export default function ChatInterface() {
     }
   };
 
+  const headerTitle = mode === 'roadmap' && selectedProblem 
+    ? selectedProblem.title 
+    : 'Mock Interview';
+  
+  const headerSubtitle = mode === 'roadmap' && selectedProblem
+    ? `${selectedProblem.categoryName} • ${selectedProblem.difficulty} • Mentor Mode 🎓`
+    : 'Interview Mode 💼';
+
   return (
     <div className="flex h-full flex-col bg-slate-950">
       <div className="shrink-0 border-b border-slate-800/60 px-4 py-3">
-        <h2 className="text-sm font-semibold text-zinc-100">AI Interview Assistant</h2>
-        <p className="text-xs text-zinc-500">Conversational coding interview with live code context.</p>
+        <h2 className="text-sm font-semibold text-zinc-100">{headerTitle}</h2>
+        <p className="text-xs text-zinc-500">{headerSubtitle}</p>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
@@ -180,14 +244,14 @@ export default function ChatInterface() {
               }`}
             >
               <div
-                className={`max-w-[80%] rounded-lg px-4 py-3 text-sm shadow-sm ${
+                className={`max-w-[80%] overflow-hidden rounded-lg px-4 py-3 text-sm shadow-sm ${
                   message.role === "user"
                     ? "bg-blue-600 text-white"
                     : "border border-gray-200/80 bg-gray-100 text-gray-900 shadow-xs dark:border-gray-800/80 dark:bg-gray-900 dark:text-gray-50"
                 }`}
               >
                 <div
-                  className={`prose prose-sm max-w-none ${
+                  className={`chat-message-content prose prose-sm max-w-none overflow-x-auto ${
                     message.role === "user"
                       ? "prose-invert prose-headings:text-white prose-p:text-white prose-strong:text-white prose-code:text-blue-200 prose-pre:bg-blue-700"
                       : "dark:prose-invert prose-pre:bg-gray-100 dark:prose-pre:bg-gray-950 prose-code:text-blue-600 dark:prose-code:text-blue-400"

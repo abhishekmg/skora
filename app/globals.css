@@ -32,9 +32,48 @@ body {
 }
 
 .prose pre {
-  @apply rounded-lg;
+  @apply rounded-lg overflow-x-auto max-w-full;
 }
 
 .prose pre code {
   @apply p-0 bg-transparent;
+}
+
+/* Ensure code blocks don't overflow chat bubbles */
+.chat-message-content pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.chat-message-content code {
+  word-break: break-word;
+}
+
+/* Resizable panel styles */
+.resize-handle {
+  @apply relative flex items-center justify-center;
+  touch-action: none;
+}
+
+.resize-handle::before {
+  content: '';
+  @apply absolute rounded-full bg-slate-600 transition-all;
+}
+
+.resize-handle:hover::before,
+.resize-handle:active::before {
+  @apply bg-blue-500;
+}
+
+.resize-handle-horizontal {
+  @apply cursor-col-resize w-2 h-full;
+}
+
+.resize-handle-horizontal::before {
+  @apply w-1 h-8;
+}
+
+.resize-handle-horizontal:hover::before,
+.resize-handle-horizontal:active::before {
+  @apply w-1.5 h-12;
 }
