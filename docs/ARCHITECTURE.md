@@ -615,20 +615,91 @@ To apply migrations:
 
 ## Security Considerations
 
-1. **Row Level Security (RLS):**
+### Client-Side Supabase Calls
+
+**Is it safe to call Supabase directly from the client?**
+
+**Yes, it's safe** when RLS (Row Level Security) is properly configured, which it is in this application.
+
+**How it works:**
+1. **Anon Key Exposure:** The `NEXT_PUBLIC_SUPABASE_ANON_KEY` is intentionally public and safe to expose because:
+   - It's designed to be used client-side
+   - RLS policies enforce security at the database level
+   - Without a valid JWT token, users can only access public data (categories, default problems)
+
+2. **Row Level Security (RLS):**
    - All tables have RLS enabled
-   - Users can only access their own data
-   - Public read access only for categories and default problems
+   - Every query is automatically filtered by `auth.uid()`
+   - Users can only access/modify their own data
+   - Even if someone intercepts the anon key, they cannot access other users' data
+
+3. **JWT Token Security:**
+   - User authentication generates a JWT token
+   - This token is automatically included in all Supabase requests
+   - The token contains the user ID, which RLS policies use to filter data
+   - Tokens are stored securely by Supabase client
+
+**Example of RLS Protection:**
+```sql
+-- This policy ensures users can only see their own progress
+CREATE POLICY "Users view own progress" 
+ON user_progress FOR SELECT 
+USING (auth.uid() = user_id);
+```
+
+Even if a malicious user tries to query:
+```javascript
+supabase.from('user_progress').select('*')
+```
+
+They will only get rows where `user_id = auth.uid()` (their own user ID).
+
+### When to Use Server-Side Routes
+
+While client-side calls are safe for most operations, use **Next.js API routes** (`app/api/*`) for:
+
+1. **Sensitive Operations:**
+   - Admin actions
+   - Bulk data operations
+   - Data migrations
+
+2. **External API Calls:**
+   - When you need to use secret API keys (like `GOOGLE_API_KEY`)
+   - Third-party service integrations
+
+3. **Complex Business Logic:**
+   - Multi-step operations
+   - Data validation/transformation
+   - Cross-table operations that need server-side validation
+
+4. **Rate Limiting:**
+   - Custom rate limiting beyond Supabase's defaults
+   - Per-user operation limits
+
+**Current Implementation:**
+- ✅ Client-side: User progress, problem selection, authentication (all protected by RLS)
+- ✅ Server-side: AI chat API (uses `GOOGLE_API_KEY` which must be secret)
+
+### Security Best Practices
+
+1. **Row Level Security (RLS):**
+   - ✅ All tables have RLS enabled
+   - ✅ Users can only access their own data
+   - ✅ Public read access only for categories and default problems
 
 2. **Authentication:**
-   - Supabase Auth handles password hashing
-   - JWT tokens for session management
-   - Secure cookie storage
+   - ✅ Supabase Auth handles password hashing
+   - ✅ JWT tokens for session management
+   - ✅ Secure cookie storage
 
 3. **API Security:**
-   - API keys stored in environment variables
-   - Never exposed to client
-   - Rate limiting handled by Supabase
+   - ✅ Secret API keys (GOOGLE_API_KEY) stored server-side only
+   - ✅ Anon key is public by design (safe with RLS)
+   - ✅ Rate limiting handled by Supabase
+
+4. **Environment Variables:**
+   - ✅ `NEXT_PUBLIC_*` variables are safe to expose (designed for client)
+   - ✅ Non-prefixed variables are server-only (never exposed)
 
 ---
 

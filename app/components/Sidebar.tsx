@@ -5,7 +5,6 @@ import { useProgress, getTotalProblemsFromCategories, type CategoryWithProblems 
 import { useAuth } from '../contexts/AuthContext';
 import AuthModal from './AuthModal';
 import { cn } from '@/lib/utils';
-import type { Problem } from '@/lib/database.types';
 
 function DifficultyBadge({ difficulty }: { difficulty: string }) {
   const colors: Record<string, string> = {
@@ -23,7 +22,7 @@ function DifficultyBadge({ difficulty }: { difficulty: string }) {
 
 function CategorySection({ category }: { category: CategoryWithProblems }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { isCompleted, selectedProblem, setSelectedProblem } = useProgress();
+  const { isCompleted, selectedProblem, setSelectedProblem, markComplete, markIncomplete } = useProgress();
 
   const completedInCategory = category.problems.filter((p) => isCompleted(p.id)).length;
   const totalInCategory = category.problems.length;
@@ -70,7 +69,7 @@ function CategorySection({ category }: { category: CategoryWithProblems }) {
             const isSelected = selectedProblem?.id === problem.id;
 
             return (
-              <button
+              <div
                 key={problem.id}
                 onClick={() =>
                   setSelectedProblem({
@@ -80,25 +79,36 @@ function CategorySection({ category }: { category: CategoryWithProblems }) {
                   })
                 }
                 className={cn(
-                  'flex w-full items-center gap-2 px-4 py-2 text-left transition',
+                  'flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left transition',
                   isSelected
                     ? 'bg-blue-600/20 text-blue-400'
                     : 'hover:bg-slate-800/50 text-zinc-300'
                 )}
               >
-                <span
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent selecting the problem when clicking the status icon
+                    if (completed) {
+                      markIncomplete(problem.id);
+                    } else {
+                      markComplete(problem.id);
+                    }
+                  }}
                   className={cn(
-                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px]',
+                    'flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-full border text-[10px] transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
                     completed
-                      ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                      : 'border-slate-600'
+                      ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                      : 'border-slate-600 hover:border-slate-500'
                   )}
+                  title={completed ? 'Click to mark as incomplete' : 'Click to mark as complete'}
+                  aria-label={completed ? 'Mark as incomplete' : 'Mark as complete'}
                 >
                   {completed && '✓'}
-                </span>
+                </button>
                 <span className="flex-1 truncate text-sm">{problem.title}</span>
                 <DifficultyBadge difficulty={problem.difficulty} />
-              </button>
+              </div>
             );
           })}
         </div>

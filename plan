@@ -7,6 +7,11 @@ Next steps
 - own api key 
 - user can update questions and reset progress 
 
+Bugs: 
+- multiple api calls 
+- we are directly calling supabse is this safe ? 
+
 v2: 
 - user can update the promts
 - use animated components
+- search for problems
