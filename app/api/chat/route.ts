@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
-
+console.log("gen~~~~~~~~~~~~~~~~~~~~~~~~~", process.env.GOOGLE_API_KEY)
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
 // ============================================================================
@@ -121,9 +121,143 @@ function extractCodeTemplate(response: string): { code: string; language: string
   return null;
 }
 
+// Boilerplate code templates for common LeetCode problems
+const BOILERPLATE_TEMPLATES: { [key: string]: { [lang: string]: string } } = {
+  'Two Sum': {
+    python: `class Solution:
+    def twoSum(self, nums: List[int], target: int) -> List[int]:
+        # Write your solution here
+        pass`,
+    javascript: `/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number[]}
+ */
+var twoSum = function(nums, target) {
+    // Write your solution here
+};`,
+    java: `class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        // Write your solution here
+        return new int[]{};
+    }
+}`,
+    cpp: `class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        // Write your solution here
+        return {};
+    }
+};`,
+  },
+  'Contains Duplicate': {
+    python: `class Solution:
+    def containsDuplicate(self, nums: List[int]) -> bool:
+        # Write your solution here
+        pass`,
+    javascript: `/**
+ * @param {number[]} nums
+ * @return {boolean}
+ */
+var containsDuplicate = function(nums) {
+    // Write your solution here
+};`,
+  },
+  'Valid Anagram': {
+    python: `class Solution:
+    def isAnagram(self, s: str, t: str) -> bool:
+        # Write your solution here
+        pass`,
+    javascript: `/**
+ * @param {string} s
+ * @param {string} t
+ * @return {boolean}
+ */
+var isAnagram = function(s, t) {
+    // Write your solution here
+};`,
+  },
+  'Valid Palindrome': {
+    python: `class Solution:
+    def isPalindrome(self, s: str) -> bool:
+        # Write your solution here
+        pass`,
+    javascript: `/**
+ * @param {string} s
+ * @return {boolean}
+ */
+var isPalindrome = function(s) {
+    // Write your solution here
+};`,
+  },
+  'Reverse Linked List': {
+    python: `# Definition for singly-linked list.
+# class ListNode:
+#     def __init__(self, val=0, next=None):
+#         self.val = val
+#         self.next = next
+class Solution:
+    def reverseList(self, head: Optional[ListNode]) -> Optional[ListNode]:
+        # Write your solution here
+        pass`,
+    javascript: `/**
+ * Definition for singly-linked list.
+ * function ListNode(val, next) {
+ *     this.val = (val===undefined ? 0 : val)
+ *     this.next = (next===undefined ? null : next)
+ * }
+ */
+/**
+ * @param {ListNode} head
+ * @return {ListNode}
+ */
+var reverseList = function(head) {
+    // Write your solution here
+};`,
+  },
+  'Invert Binary Tree': {
+    python: `# Definition for a binary tree node.
+# class TreeNode:
+#     def __init__(self, val=0, left=None, right=None):
+#         self.val = val
+#         self.left = left
+#         self.right = right
+class Solution:
+    def invertTree(self, root: Optional[TreeNode]) -> Optional[TreeNode]:
+        # Write your solution here
+        pass`,
+    javascript: `/**
+ * Definition for a binary tree node.
+ * function TreeNode(val, left, right) {
+ *     this.val = (val===undefined ? 0 : val)
+ *     this.left = (left===undefined ? null : left)
+ *     this.right = (right===undefined ? null : right)
+ * }
+ */
+/**
+ * @param {TreeNode} root
+ * @return {TreeNode}
+ */
+var invertTree = function(root) {
+    // Write your solution here
+};`,
+  },
+};
+
+// Get boilerplate for a problem, fallback to generic template
+function getBoilerplate(problemTitle: string, language: string): { code: string; language: string } | null {
+  const templates = BOILERPLATE_TEMPLATES[problemTitle];
+  if (templates) {
+    const code = templates[language] || templates['python'] || Object.values(templates)[0];
+    const lang = templates[language] ? language : (templates['python'] ? 'python' : Object.keys(templates)[0]);
+    return { code, language: lang };
+  }
+  return null;
+}
+
 export async function POST(request: Request) {
   try {
-    const { messages, code, language, problemContext } = await request.json();
+    const { messages, code, language, problemContext, requestBoilerplateOnly } = await request.json();
 
     if (!process.env.GOOGLE_API_KEY) {
       return NextResponse.json(
@@ -132,13 +266,35 @@ export async function POST(request: Request) {
       );
     }
 
+    // Fast path: if just requesting boilerplate, try to return from cache first
+    if (requestBoilerplateOnly && problemContext) {
+      const cachedBoilerplate = getBoilerplate(problemContext.title, language);
+      if (cachedBoilerplate) {
+        return NextResponse.json({
+          response: '',
+          codeTemplate: cachedBoilerplate.code,
+          templateLanguage: cachedBoilerplate.language,
+          passed: false,
+        });
+      }
+    }
+
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     // Choose prompt based on whether there's a specific problem selected (Mentor mode) or not (Interview mode)
     const isMentorMode = !!problemContext;
-    const systemPrompt = isMentorMode 
+    
+    // Special prompt for boilerplate-only requests
+    const boilerplatePrompt = requestBoilerplateOnly
+      ? `Provide ONLY the LeetCode-style function boilerplate/starter code for "${problemContext.title}" in ${language}. 
+         Include the class Solution and method signature with proper type hints.
+         Include a comment "// Write your solution here" or "# Write your solution here".
+         Do NOT include any explanation, just the code block.`
+      : null;
+
+    const systemPrompt = boilerplatePrompt || (isMentorMode 
       ? `${MENTOR_PROMPT}\n\nThe student is working on: "${problemContext.title}" (${problemContext.category}, ${problemContext.difficulty})`
-      : INTERVIEWER_PROMPT;
+      : INTERVIEWER_PROMPT);
 
     // Build chat history with system prompt
     const history = messages.slice(0, -1).map((msg: { role: string; content: string }) => ({
@@ -151,7 +307,7 @@ export async function POST(request: Request) {
       : 'Hello! I\'m your AI interviewer. Let\'s start with selecting a topic. What would you like to practice today? (e.g., Arrays, Strings, Dynamic Programming, Trees, Graphs)';
 
     const chat = model.startChat({
-      history: [
+      history: requestBoilerplateOnly ? [] : [
         {
           role: 'user',
           parts: [{ text: 'You are my interviewer. Follow these instructions:\n\n' + systemPrompt }],
@@ -167,12 +323,14 @@ export async function POST(request: Request) {
     const lastMessage = messages[messages.length - 1];
     
     // Include code context and language preference
-    let messageWithContext = lastMessage.content;
-    if (code && code.trim() && !code.includes('// Write your solution here') && !code.includes('# Write your solution here')) {
-      messageWithContext = `${lastMessage.content}\n\n[Current code in ${language} editor]:\n\`\`\`${language}\n${code}\n\`\`\``;
-    } else {
-      // Just mention the language preference
-      messageWithContext = `${lastMessage.content}\n\n[Candidate's preferred language: ${language}]`;
+    let messageWithContext = requestBoilerplateOnly ? systemPrompt : lastMessage.content;
+    if (!requestBoilerplateOnly) {
+      if (code && code.trim() && !code.includes('// Write your solution here') && !code.includes('# Write your solution here')) {
+        messageWithContext = `${lastMessage.content}\n\n[Current code in ${language} editor]:\n\`\`\`${language}\n${code}\n\`\`\``;
+      } else {
+        // Just mention the language preference
+        messageWithContext = `${lastMessage.content}\n\n[Candidate's preferred language: ${language}]`;
+      }
     }
     
     const result = await chat.sendMessage(messageWithContext);
@@ -186,7 +344,7 @@ export async function POST(request: Request) {
     const failed = response.includes('[FAIL]');
 
     return NextResponse.json({ 
-      response: response.replace('[PASS]', '').replace('[FAIL]', '').trim(),
+      response: requestBoilerplateOnly ? '' : response.replace('[PASS]', '').replace('[FAIL]', '').trim(),
       codeTemplate: templateData?.code,
       templateLanguage: templateData?.language,
       passed: passed && !failed,

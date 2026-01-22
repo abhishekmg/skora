@@ -1,0 +1,57 @@
+# Cursor Rules for Practice App
+
+## Documentation Maintenance Rule
+
+**CRITICAL: Always update documentation when making changes to:**
+
+1. **Database Schema Changes:**
+   - When adding/modifying tables, columns, indexes, or constraints
+   - When changing RLS policies or triggers
+   - When creating new migrations
+   - **Update:** `docs/ARCHITECTURE.md` → Database Schema section
+
+2. **Application Flow Changes:**
+   - When modifying data flow between components
+   - When adding/removing context providers
+   - When changing API routes or request/response formats
+   - When modifying component interactions
+   - **Update:** `docs/ARCHITECTURE.md` → Data Flow and Key Components sections
+
+3. **New Features:**
+   - When adding new features or major functionality
+   - When changing user workflows
+   - **Update:** `docs/ARCHITECTURE.md` → Features section
+
+4. **Component Changes:**
+   - When adding new major components
+   - When significantly refactoring existing components
+   - **Update:** `docs/ARCHITECTURE.md` → Key Components section
+
+## Documentation File Location
+
+- **Main Documentation:** `docs/ARCHITECTURE.md`
+- **Database Schema:** Documented in `docs/ARCHITECTURE.md` → Database Schema section
+- **Migrations:** Located in `supabase/migrations/`
+
+## Before Committing Changes
+
+Before committing any changes that affect:
+- Database schema
+- Application architecture
+- Data flow
+- Major features
+
+**Verify:**
+- [ ] Documentation in `docs/ARCHITECTURE.md` is updated
+- [ ] ER diagram (if schema changed) is accurate
+- [ ] Data flow diagrams reflect current behavior
+- [ ] Component descriptions are current
+- [ ] API route documentation is accurate
+
+## Quick Reference
+
+When making changes, ask yourself:
+- "Does this change how data flows through the app?" → Update Data Flow section
+- "Does this change the database structure?" → Update Database Schema section
+- "Does this add/change a major feature?" → Update Features section
+- "Does this add/change a component?" → Update Key Components section

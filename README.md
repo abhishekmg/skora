@@ -1,5 +1,18 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## 📚 Documentation
+
+**Comprehensive architecture and database documentation:** [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)
+
+This documentation covers:
+- Database schema and relationships
+- Application architecture and data flow
+- Key components and their interactions
+- Features and functionality
+- Troubleshooting guide
+
+**⚠️ Important:** When making changes to database schema or application flow, **always update the documentation** in `docs/ARCHITECTURE.md`. See `.cursorrules` for guidelines.
+
 ## Getting Started
 
 First, run the development server:

@@ -40,7 +40,7 @@ export default function ChatInterface() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Reset chat when problem or mode changes
+  // Reset chat when problem or mode changes and fetch boilerplate
   useEffect(() => {
     const problemId = selectedProblem?.id ?? null;
     
@@ -51,12 +51,54 @@ export default function ChatInterface() {
       if (mode === 'roadmap' && selectedProblem) {
         setMessages([getInitialMessage('roadmap', selectedProblem.title, selectedProblem.categoryName)]);
         resetCode();
+        
+        // Automatically fetch the problem boilerplate
+        fetchProblemBoilerplate(selectedProblem.title, selectedProblem.categoryName, selectedProblem.difficulty);
       } else if (mode === 'interview') {
         setMessages([getInitialMessage('interview')]);
         resetCode();
       }
     }
   }, [selectedProblem, mode, resetCode]);
+
+  // Fetch boilerplate code for a problem
+  const fetchProblemBoilerplate = async (title: string, category: string, difficulty: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: "user", content: `Please provide me the LeetCode-style function boilerplate for the "${title}" problem. Just give me the starter code template, no explanation needed yet.` }
+          ],
+          code: "",
+          language,
+          problemContext: {
+            title,
+            category,
+            difficulty,
+          },
+          requestBoilerplateOnly: true,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.codeTemplate) {
+        if (data.templateLanguage && data.templateLanguage !== language) {
+          setLanguage(data.templateLanguage);
+        }
+        setCode(data.codeTemplate);
+      }
+    } catch (error) {
+      console.error("Error fetching boilerplate:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmitCode = useCallback(async () => {
     const problemContext = selectedProblem 
