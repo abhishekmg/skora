@@ -1,6 +1,7 @@
- 'use client';
+"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { useCode } from "../contexts/CodeContext";
 import { useProgress } from "../contexts/ProgressContext";
 import ReactMarkdown from "react-markdown";
@@ -261,68 +262,99 @@ export default function ChatInterface() {
     }
   };
 
-  const headerTitle = mode === 'roadmap' && selectedProblem 
+  const headerTitle = mode === "roadmap" && selectedProblem 
     ? selectedProblem.title 
     : 'Mock Interview';
   
-  const headerSubtitle = mode === 'roadmap' && selectedProblem
+  const headerSubtitle = mode === "roadmap" && selectedProblem
     ? `${selectedProblem.categoryName} • ${selectedProblem.difficulty} • Mentor Mode 🎓`
     : 'Interview Mode 💼';
 
   return (
-    <div className="flex h-full flex-col bg-slate-950">
-      <div className="shrink-0 border-b border-slate-800/60 px-4 py-3">
+    <motion.div
+      className="flex h-full flex-col bg-slate-950"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 220, damping: 24 }}
+    >
+      <motion.div
+        className="shrink-0 border-b border-slate-800/60 px-4 py-3"
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 240, damping: 24, delay: 0.05 }}
+      >
         <h2 className="text-sm font-semibold text-zinc-100">{headerTitle}</h2>
         <p className="text-xs text-zinc-500">{headerSubtitle}</p>
-      </div>
+      </motion.div>
 
       <div className="flex min-h-0 flex-1 flex-col">
         <ScrollArea className="flex-1 space-y-4 px-4 py-3">
-          {messages.map((message) => (
-            <div
-              key={`${message.role}-${message.content.slice(0, 24)}`}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-[80%] overflow-hidden rounded-lg px-4 py-3 text-sm shadow-sm ${
-                  message.role === "user"
-                    ? "bg-blue-600 text-white"
-                    : "border border-gray-200/80 bg-gray-100 text-gray-900 shadow-xs dark:border-gray-800/80 dark:bg-gray-900 dark:text-gray-50"
+          <AnimatePresence initial={false}>
+            {messages.map((message) => (
+              <motion.div
+                key={`${message.role}-${message.content.slice(0, 32)}-${message.content.length}`}
+                className={`flex ${
+                  message.role === "user" ? "justify-end" : "justify-start"
                 }`}
+                initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                layout
               >
-                <div
-                  className={`chat-message-content prose prose-sm max-w-none overflow-x-auto ${
+                <motion.div
+                  className={`max-w-[80%] overflow-hidden rounded-lg px-4 py-3 text-sm shadow-sm ${
                     message.role === "user"
-                      ? "prose-invert prose-headings:text-white prose-p:text-white prose-strong:text-white prose-code:text-blue-200 prose-pre:bg-blue-700"
-                      : "dark:prose-invert prose-pre:bg-gray-100 dark:prose-pre:bg-gray-950 prose-code:text-blue-600 dark:prose-code:text-blue-400"
+                      ? "bg-blue-600 text-white"
+                      : "border border-gray-200/80 bg-gray-100 text-gray-900 shadow-xs dark:border-gray-800/80 dark:bg-gray-900 dark:text-gray-50"
                   }`}
+                  layout
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            </div>
-          ))}
+                  <div
+                    className={`chat-message-content prose prose-sm max-w-none overflow-x-auto ${
+                      message.role === "user"
+                        ? "prose-invert prose-headings:text-white prose-p:text-white prose-strong:text-white prose-code:text-blue-200 prose-pre:bg-blue-700"
+                        : "dark:prose-invert prose-pre:bg-gray-100 dark:prose-pre:bg-gray-950 prose-code:text-blue-600 dark:prose-code:text-blue-400"
+                    }`}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                </motion.div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-lg border border-gray-200/80 bg-gray-100 px-4 py-3 text-gray-900 shadow-sm dark:border-gray-800/80 dark:bg-gray-900 dark:text-gray-50">
-                <div className="flex items-center gap-2">
-                  <Spinner className="h-4 w-4" />
-                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                    Just a second...
-                  </span>
+          <AnimatePresence>
+            {isLoading && (
+              <motion.div
+                className="flex justify-start"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ type: "spring", stiffness: 240, damping: 22 }}
+              >
+                <div className="max-w-[80%] rounded-lg border border-gray-200/80 bg-gray-100 px-4 py-3 text-gray-900 shadow-sm dark:border-gray-800/80 dark:bg-gray-900 dark:text-gray-50">
+                  <div className="flex items-center gap-2">
+                    <Spinner className="h-4 w-4" />
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      Just a second...
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </ScrollArea>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 border-t border-slate-800/60 bg-slate-900/80 px-4 py-3">
+      <motion.div
+        className="flex shrink-0 items-center gap-2 border-t border-slate-800/60 bg-slate-900/80 px-4 py-3"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 230, damping: 24, delay: 0.05 }}
+      >
         <Input
           type="text"
           value={input}
@@ -331,15 +363,21 @@ export default function ChatInterface() {
           placeholder="Ask a question or describe a problem..."
           className="flex-1 border-slate-700 bg-slate-900 text-zinc-100 placeholder:text-zinc-500"
         />
-        <Button
-          onClick={handleSend}
-          disabled={isLoading}
-          className="whitespace-nowrap"
+        <motion.div
+          initial={false}
+          animate={{ opacity: isLoading ? 0.8 : 1, scale: isLoading ? 0.98 : 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
         >
-          {isLoading ? "Sending..." : "Send"}
-        </Button>
-      </div>
-    </div>
+          <Button
+            onClick={handleSend}
+            disabled={isLoading}
+            className="whitespace-nowrap"
+          >
+            {isLoading ? "Sending..." : "Send"}
+          </Button>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
 
