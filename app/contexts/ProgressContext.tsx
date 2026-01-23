@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 import type { Problem, Category } from '@/lib/database.types';
@@ -55,7 +55,7 @@ interface ProgressContextType {
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   
   // Data state
   const [categories, setCategories] = useState<CategoryWithProblems[]>([]);
@@ -69,8 +69,25 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const [selectedProblem, setSelectedProblem] = useState<ProblemWithCategory | null>(null);
   const [mode, setMode] = useState<'roadmap' | 'interview'>('roadmap');
 
+  // Ref to prevent duplicate fetches
+  const isFetchingRef = useRef(false);
+  const lastFetchedUserIdRef = useRef<string | null>(null);
+
   // Fetch categories and problems from Supabase
   const fetchData = useCallback(async () => {
+    const currentUserId = user?.id || null;
+    
+    // Prevent duplicate calls
+    if (isFetchingRef.current) {
+      return;
+    }
+
+    // If we already fetched for this user, don't refetch
+    if (lastFetchedUserIdRef.current === currentUserId && categories.length > 0) {
+      return;
+    }
+
+    isFetchingRef.current = true;
     setIsLoadingData(true);
     
     try {
@@ -110,6 +127,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       }));
 
       setCategories(categoriesWithProblems);
+      
+      // Track that we've fetched for this user
+      lastFetchedUserIdRef.current = user?.id || null;
 
       // If user is logged in, fetch their active roadmap and progress
       if (user) {
@@ -142,6 +162,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       console.error('Error fetching data:', error);
     } finally {
       setIsLoadingData(false);
+      isFetchingRef.current = false;
     }
   }, [user]);
 
@@ -152,8 +173,19 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
 
   // Fetch data on mount and when user changes
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    // Wait for auth to finish loading before fetching
+    if (isAuthLoading) {
+      return;
+    }
+    
+    const currentUserId = user?.id || null;
+    
+    // Only fetch if user actually changed
+    if (lastFetchedUserIdRef.current !== currentUserId) {
+      fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isAuthLoading]); // Only depend on user.id and auth loading state
 
   // Mark problem as complete
   const markComplete = useCallback(async (problemId: string) => {
