@@ -85,7 +85,7 @@ Stores user profile information linked to Supabase Auth.
 ---
 
 #### 2. `categories`
-Pre-seeded problem categories (Arrays, Trees, DP, etc.).
+Pre-seeded problem categories (Arrays & Hashing, Two Pointers, Sliding Window, Stack, Binary Search, Linked List, Trees, Tries, Heap, Backtracking, Graphs, Advanced Graphs, DP, Greedy, Intervals, Math & Geometry, Bit Manipulation, Prefix Sum, Queue, etc.).
 
 **Columns:**
 - `id` (uuid, PK) - Unique identifier
@@ -102,7 +102,7 @@ Pre-seeded problem categories (Arrays, Trees, DP, etc.).
 ---
 
 #### 3. `problems`
-Stores coding problems (pre-seeded LeetCode Top 150 + user-created).
+Stores coding problems (pre-seeded LeetCode Top 150 + LeetCode Top 75 additional + user-created).
 
 **Columns:**
 - `id` (uuid, PK) - Unique identifier
@@ -242,7 +242,8 @@ practice/
 ├── supabase/
 │   └── migrations/
 │       ├── 001_initial_schema.sql # Database schema
-│       └── 002_seed_data.sql      # Seed data (categories & problems)
+│       ├── 002_seed_data.sql      # Seed data (categories & problems)
+│       └── 003_top75_additional_problems.sql  # Top 75 additional problems
 └── docs/
     └── ARCHITECTURE.md            # This file
 ```
@@ -659,6 +660,7 @@ Migrations are located in `supabase/migrations/`:
 
 1. **001_initial_schema.sql** - Creates all tables, indexes, RLS policies, and triggers
 2. **002_seed_data.sql** - Seeds categories and problems (LeetCode Top 150)
+3. **003_top75_additional_problems.sql** - Adds Prefix Sum and Queue categories and LeetCode Top 75 additional problems (no duplicates)
 
 To apply migrations:
 - Use Supabase MCP tools: `apply_migration`

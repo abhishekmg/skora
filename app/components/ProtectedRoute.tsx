@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode, useState } from 'react';
+import Image from 'next/image';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -67,12 +68,17 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
         <div className="w-full max-w-md space-y-6 px-4">
           <div className="text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-lg font-semibold text-white">
-                AI
-              </div>
+              <Image
+                src="/logo.svg"
+                alt="Skora logo"
+                width={48}
+                height={48}
+                className="h-12 w-12"
+                priority
+              />
             </div>
             <h1 className="mb-2 text-2xl font-semibold text-zinc-100">
-              Welcome to Interview Mentor
+              Welcome to Skora
             </h1>
             <p className="text-sm text-zinc-400">
               Sign in to access your practice sessions, track progress, and start coding interviews.

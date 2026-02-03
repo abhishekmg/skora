@@ -1,6 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "./components/ui/button";
 import { Card } from "./components/ui/card";
+
+export const metadata: Metadata = {
+  title: "Skora – AI-powered coding interview practice",
+  description:
+    "Practice coding interviews with Skora: an AI mentor and mock interviewer, a curated problem roadmap, and an in-browser editor with instant feedback.",
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default function Home() {
   return (
@@ -9,12 +20,17 @@ export default function Home() {
         {/* Top nav */}
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold">
-              AI
-            </div>
+            <Image
+              src="/logo.svg"
+              alt="Skora logo"
+              width={36}
+              height={36}
+              className="h-9 w-9"
+              priority
+            />
             <div>
               <div className="text-sm font-semibold tracking-tight">
-                Interview Mentor
+                Skora
               </div>
               <p className="text-[11px] text-zinc-500">
                 Practice smarter. Ship confidence.
