@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://skora.app"),
+  metadataBase: new URL("https://skora.site"),
   title: "Skora",
   description:
     "Skora – practice coding interviews with an AI mentor and realistic mock interviewer. Track your roadmap, write code in-browser, and get honest feedback on every solution.",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     title: "Skora – AI-powered coding interview practice",
     description:
       "Practice coding interviews with an AI mentor and mock interviewer in your browser. Follow a curated roadmap, get live feedback, and track your LeetCode-style progress.",
-    url: "https://skora.app",
+    url: "https://skora.site",
     siteName: "Skora",
     images: [
       {
