@@ -65,3 +65,10 @@ When making changes, ask yourself:
 - "Does this change the database structure?" → Update Database Schema section
 - "Does this add/change a major feature?" → Update Features section
 - "Does this add/change a component?" → Update Key Components section
+
+## SEO & Sitemap Rule
+
+- **Always keep the sitemap up to date.**
+- When adding a new top-level page/route that should be indexable (e.g. `/pricing`, `/blog`, `/app/xyz`):
+  - Add an entry for it in `app/sitemap.ts` with the correct URL, `changeFrequency`, and `priority`.
+  - If the page has its own metadata (title/description), also ensure it has a canonical URL via `metadata.alternates.canonical`.

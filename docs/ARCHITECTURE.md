@@ -648,6 +648,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 # Google AI (optional if users bring their own key via Settings → API key)
 GOOGLE_API_KEY=your-google-api-key
+
+# Analytics (optional but recommended for production)
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
 When `GOOGLE_API_KEY` is not set, the app works for users who add their own key in **Settings → API key** in the sidebar. If neither the header nor the env key is present, `/api/chat` returns 400 with an explanatory message.

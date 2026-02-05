@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,6 +60,28 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Global Google Analytics (gtag.js) – loaded once for the whole app.
+            Only loads when NEXT_PUBLIC_GA_MEASUREMENT_ID is configured. */}
+        {GA_MEASUREMENT_ID ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script
+              id="gtag-init"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${GA_MEASUREMENT_ID}');
+                `,
+              }}
+            />
+          </>
+        ) : null}
         {children}
       </body>
     </html>
